@@ -1,8 +1,7 @@
 package br.com.cotiinformatica.dtos;
 
 public class UsuarioLoginDTO {
-
-	// atributos
+// atributos
 	private String email;
 	private String senha;
 
@@ -21,5 +20,4 @@ public class UsuarioLoginDTO {
 	public void setSenha(String senha) {
 		this.senha = senha;
 	}
-
 }
