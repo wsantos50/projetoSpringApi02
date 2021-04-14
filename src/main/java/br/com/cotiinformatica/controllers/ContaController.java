@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,14 +19,19 @@ import br.com.cotiinformatica.dtos.ContaCadastroDTO;
 import br.com.cotiinformatica.dtos.ContaConsultaDTO;
 import br.com.cotiinformatica.dtos.ContaEdicaoDTO;
 import br.com.cotiinformatica.entities.Conta;
+import br.com.cotiinformatica.entities.Usuario;
 import br.com.cotiinformatica.enums.TipoConta;
 import br.com.cotiinformatica.repositories.ContaRepository;
+import br.com.cotiinformatica.repositories.UsuarioRepository;
 
 @Controller
 public class ContaController {
 
 	@Autowired
 	private ContaRepository contaRepository;
+	
+	@Autowired
+	private UsuarioRepository usuarioRepository;
 	
 	// declarando o ENDPOINT dos serviços de usuario
 	private static final String ENDPOINT = "/api/contas";
@@ -38,6 +44,12 @@ public class ContaController {
 		
 		try {
 			
+			String email = (String) SecurityContextHolder
+					.getContext().getAuthentication().getPrincipal();
+			
+			//obtendo o usuario para relacionar com a conta
+			Usuario usuario = usuarioRepository.findByEmail(email);
+			
 			Conta conta = new Conta();
 			
 			conta.setNome(dto.getNome());
@@ -45,6 +57,7 @@ public class ContaController {
 			conta.setValor(dto.getValor());
 			conta.setDescricao(dto.getDescricao());
 			conta.setTipo(TipoConta.valueOf(dto.getTipo()));
+			conta.setUsuario(usuario);
 			
 			contaRepository.save(conta);
 			

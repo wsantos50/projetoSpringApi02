@@ -1,11 +1,15 @@
 package br.com.cotiinformatica.controllers;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +19,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import br.com.cotiinformatica.dtos.UsuarioLoginDTO;
 import br.com.cotiinformatica.repositories.UsuarioRepository;
 import br.com.cotiinformatica.validations.UsuarioLoginValidation;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 
 @Controller
 public class LoginController {
@@ -42,9 +48,8 @@ public class LoginController {
 				//verificar se o usuario existe no banco de dados (email e senha)
 				if(usuarioRepository.findByEmailSenha(dto.getEmail(), dto.getSenha()) != null) {
 					
-					//TODO GERAR TOKEN
-					
-					mensagens.add("Usuário autenticado com sucesso.");
+					//gerando o TOKEN de acesso do usuário
+					mensagens.add(getJWTToken(dto.getEmail()));
 					
 					//retornar status de sucesso 200 (OK)
 					return ResponseEntity
@@ -74,4 +79,30 @@ public class LoginController {
 					.body(mensagens);	
 		}
 	}
+	
+	//método utilizado para gerar o TOKEN do usuário..
+	private String getJWTToken(String email) {
+		
+		//Todo TOKEN é gerado de forma criptografada, mas precisamos gerar essa criptografia
+		//utilizando uma palavra secreta, isso irá garantir que nenhum outro projeto conseguirá
+		//falsificar TOKENs da nossa aplicação.
+		String secretKey = "5eebb082-4046-4d7f-a638-3c16d9dec4f8";
+		
+		//Gerando o TOKEN de acesso do usuário
+		List<GrantedAuthority> grantedAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList("ROLE_USER");
+		
+		String token = Jwts
+				.builder()
+				.setId("COTI_JWT")
+				.setSubject(email)
+				.claim("authorities", grantedAuthorities.stream()
+						.map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
+				.setIssuedAt(new Date(System.currentTimeMillis()))
+				.setExpiration(new Date(System.currentTimeMillis() + 600000)) //expira em 10 minutos
+				.signWith(SignatureAlgorithm.HS512, secretKey.getBytes())
+				.compact();
+		
+		return token;
+	}
+	
 }
